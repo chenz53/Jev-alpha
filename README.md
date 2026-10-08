@@ -11,6 +11,7 @@ The first experiment establishes a capability baseline. Matching Jev's inference
 **8,400 training questions · ~10 million trainable parameters · one H200 · eight runs in 20 hours 39 minutes**
 
 This is an independent project inspired by Jev. It builds on [ms-swift](https://github.com/modelscope/ms-swift) without changing framework code.
+**[Download the model](https://huggingface.co/chenz53/Jev-alpha-26B-A4B) · [Run an example](#get-started)**
 
 ## Decisions that software can use
 
@@ -102,7 +103,6 @@ Our test uses 100 questions per dataset. Jev sources use Kev commit `fe64b1274ea
 - [Devtools-v1](https://github.com/jaredpalmer/kev/blob/fe64b1274ea7f80d4095866df90666abb03e9cf6/runs/jev-devtools-v1/report.json): When2Call; 150 questions.
 
 [Plot values and provenance](docs/assets/jev-comparison.json) include source hashes, the model revision, and individual seed values.
-With Matplotlib available, regenerate the SVG with `python -m jev_alpha.plot_comparison`.
 
 ## How it works
 
@@ -144,55 +144,56 @@ Each question currently repeats the state. Avoiding answer generation does not b
 The [architecture reference](https://archerhume.com/posts/jevs-architecture-unmasked) guides the research; it is not a verified specification of Jev's internals.
 
 This repository publishes the reusable architecture, tests, a small example workflow, and attributed comparison values.
-Full experiment data, checkpoints, raw reports, and dated research workflows remain local and are not distributed.
-The example below checks the implementation; it does not reproduce the full Gemma experiment.
+Full experiment data, adapter checkpoints, raw reports, and dated research workflows remain local. The merged model is available on Hugging Face.
 
 ## Get started
 
-Use Python 3.12 and an NVIDIA GPU. The tested environment uses PyTorch 2.8.0, Transformers 5.16.1, and an H200.
-The default example uses **Qwen3.5-0.8B-Base**, which is separate from the larger Gemma model used for the reported experiment.
+Download **[chenz53/Jev-alpha-26B-A4B on Hugging Face](https://huggingface.co/chenz53/Jev-alpha-26B-A4B)**.
+It contains 51.6 GB of standalone BF16 weights, the tokenizer, and a fitted temperature. No LoRA adapter is required.
+This is the merged seed-42 checkpoint. Its measured accuracy is **79.50%**, distinct from the three-seed averages above.
+
+Use Python 3.12 and enough GPU memory for the weights plus inference. The tested setup uses an H200, PyTorch 2.8.0, and Transformers 5.16.1.
 
 ```bash
 git clone https://github.com/chenz53/Jev-alpha.git
 cd Jev-alpha
 uv venv .venv --python 3.12
 source .venv/bin/activate
-uv pip install -e '.[qwen]'
-bash configs/build_data.sh
-bash configs/train.sh
+uv pip install -e .
 ```
 
-ms-swift installs from its original repository at commit `c2bcc23a1f1c428dc8be0ae509c31a532922453f` (`4.6.0.dev0`).
-There is no framework fork or submodule. The Qwen extra supplies its loader dependencies; the project does not include a full environment lock.
-The example uses BoolQ training and calibration data, plus 18 fixed synthetic test questions.
-Preparation removes exact and near state matches with held-out data. For a short integration run, use `bash configs/pilot.sh`.
+The package installs the pinned upstream ms-swift dependency. Then run this example:
 
-```bash
-# Train with the optional reference penalty.
-JEV_KL_TOP_K=64 JEV_KL_WEIGHT=0.1 bash configs/train.sh \
-  --loss_type jev_options_kl --lora_dropout 0 --output_dir runs/boolq-kl
-# Replace the checkpoint placeholder with the path printed by training.
-CHECKPOINT=runs/boolq/<run>/checkpoint-<step> bash configs/evaluate.sh
-python -m jev_alpha.predict --model Qwen/Qwen3.5-0.8B-Base \
-  --adapter runs/boolq/<run>/checkpoint-<step> \
-  --input requests.jsonl --output probabilities.jsonl
+```python
+import json
+import torch
+from huggingface_hub import hf_hub_download
+from transformers import AutoProcessor, Gemma4ForConditionalGeneration
+from jev_alpha.predict import predict
+
+repo = "chenz53/Jev-alpha-26B-A4B"
+model = Gemma4ForConditionalGeneration.from_pretrained(
+    repo, dtype=torch.bfloat16, device_map="auto", attn_implementation="sdpa"
+).eval()
+model.set_experts_implementation("grouped_mm")
+tokenizer = AutoProcessor.from_pretrained(repo).tokenizer
+with open(hf_hub_download(repo, "temperature.json")) as stream:
+    temperature = json.load(stream)["temperature"]
+record = {"state": "The payment failed. The login works.", "questions": {
+    "route": {"type": "choice", "instructions": "Which team handles the problem?",
+              "criteria": {"payments": "Payment failures", "account": "Login access"}}
+}}
+print(predict(model, tokenizer, record, temperature=temperature))
 ```
 
-Save input records as JSON Lines: one JSON object per line. Serving loads the adapter's fitted temperature when present; otherwise it uses one.
-Keep lazy tokenization, zero data workers, no packing, and full sequence logits for these loss hooks.
-Inputs beyond the context limit cause an error. Commands refuse to replace existing data and result files.
-The pin's full training flags are available through `python -c 'import sys; from swift.pipelines import sft_main; sys.argv=["sft", "--help"]; sft_main()'`.
+The result maps `route` to probabilities for `payments` and `account`; it does not generate answer text.
+Use the same `record` format for the `noul` and `score` questions shown above.
+The example uses the release's measured expert backend and calibration. Different precision or backends can change probabilities.
+See the [training guide](docs/training.md) to prepare data, train adapters, and evaluate a small Qwen baseline.
 
 ## Code and checks
 
 Core modules in `jev_alpha/` handle rendering, templates, losses, prediction, calibration, and evaluation.
-`jev_alpha/datasets/` holds the example data workflow. `configs/` contains run scripts; `tests/` covers the core and framework hooks.
+`configs/` contains run scripts; `tests/` covers the core and framework hooks.
+See the [development checks](docs/training.md#code-and-checks) for test and formatting commands.
 Data, checkpoints, reports, caches, and the optional local ms-swift checkout stay outside Git.
-
-```bash
-python -m unittest discover -s tests -v
-ruff check .
-ruff format --check .
-```
-
-Plugin tests load the Qwen tokenizer through ms-swift and can download metadata on the first run.
