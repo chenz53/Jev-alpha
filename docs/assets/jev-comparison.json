@@ -1,0 +1,207 @@
+{
+  "date": "2026-10-08",
+  "model": "google/gemma-4-26B-A4B-it",
+  "model_revision": "4d7ae4984b7db7de8f8457170b3f1a419ee76d52",
+  "loss": "option CE + 0.1 * conditional reference top-64 non-option KL",
+  "epochs": 2,
+  "train_questions": 8400,
+  "seeds": [
+    42,
+    43,
+    44
+  ],
+  "ours_report_sha256": "9b3d0d2a1a76e8a262ca171cd55399c098dfdfe94aff23a91d9fad148f66a665",
+  "ours_provenance": "Completed local experiment 2026-10-06; raw reports, checkpoints, and data are intentionally not distributed. Aggregate values are supplied for this documentation plot.",
+  "limits": [
+    "Different question samples, prompts, and option construction; not a paired comparison.",
+    "Our final holdouts come from training dataset families; Jev training data is unknown.",
+    "Jev values are third-party hosted-model measurements published by Kev, not a new Jev run.",
+    "Seed 42 selects the KL weight; seeds 43 and 44 are replications.",
+    "This repository publishes core architecture and an example workflow, not the full dated experiment."
+  ],
+  "jev_sources": {
+    "transfer": {
+      "url": "https://github.com/jaredpalmer/kev/blob/fe64b1274ea7f80d4095866df90666abb03e9cf6/runs/jev-transfer-v4/report.json",
+      "sha256": "e93f1764154f1244c376e2cd3066e6e0bba1ddf12d8d13432e6bf43e47709886"
+    },
+    "classification": {
+      "url": "https://github.com/jaredpalmer/kev/blob/fe64b1274ea7f80d4095866df90666abb03e9cf6/runs/jev-decision-v4/report.json",
+      "sha256": "5c0dca8b6f6688221dc0c032029d035d1b2da219ad6d8d43ce121e863332d902"
+    },
+    "breadth": {
+      "url": "https://github.com/jaredpalmer/kev/blob/fe64b1274ea7f80d4095866df90666abb03e9cf6/runs/breadth-v1-jev/report.json",
+      "sha256": "bdda228efcf99b11209536d11a38c96cc5e764bda36e83a2b4d9b1648b1c6c14"
+    },
+    "actions": {
+      "url": "https://github.com/jaredpalmer/kev/blob/fe64b1274ea7f80d4095866df90666abb03e9cf6/runs/jev-devtools-v1/report.json",
+      "sha256": "f71d032a2fda780aa5da0ae533eb41486f4872931623cb5abc6ce98f96e7d98a"
+    }
+  },
+  "tasks": [
+    {
+      "task": "google/boolq",
+      "label": "BoolQ",
+      "ours_accuracy": 0.92,
+      "ours_by_seed": {
+        "seed42-kl0.1": 0.92,
+        "seed43-kl0.1": 0.92,
+        "seed44-kl0.1": 0.92
+      },
+      "ours_n": 100,
+      "jev_accuracy": 0.925,
+      "jev_n": 80,
+      "jev_source": "classification",
+      "jev_task": "boolq"
+    },
+    {
+      "task": "qnli",
+      "label": "QNLI",
+      "ours_accuracy": 0.9433333333333334,
+      "ours_by_seed": {
+        "seed42-kl0.1": 0.93,
+        "seed43-kl0.1": 0.95,
+        "seed44-kl0.1": 0.95
+      },
+      "ours_n": 100,
+      "jev_accuracy": 0.925,
+      "jev_n": 80,
+      "jev_source": "transfer",
+      "jev_task": "qnli"
+    },
+    {
+      "task": "paws",
+      "label": "PAWS",
+      "ours_accuracy": 0.94,
+      "ours_by_seed": {
+        "seed42-kl0.1": 0.93,
+        "seed43-kl0.1": 0.95,
+        "seed44-kl0.1": 0.94
+      },
+      "ours_n": 100,
+      "jev_accuracy": 0.7875,
+      "jev_n": 80,
+      "jev_source": "transfer",
+      "jev_task": "paws"
+    },
+    {
+      "task": "mmlu",
+      "label": "MMLU",
+      "ours_accuracy": 0.83,
+      "ours_by_seed": {
+        "seed42-kl0.1": 0.82,
+        "seed43-kl0.1": 0.85,
+        "seed44-kl0.1": 0.82
+      },
+      "ours_n": 100,
+      "jev_accuracy": 0.9,
+      "jev_n": 80,
+      "jev_source": "transfer",
+      "jev_task": "mmlu"
+    },
+    {
+      "task": "sciq",
+      "label": "SciQ",
+      "ours_accuracy": 1.0,
+      "ours_by_seed": {
+        "seed42-kl0.1": 1.0,
+        "seed43-kl0.1": 1.0,
+        "seed44-kl0.1": 1.0
+      },
+      "ours_n": 100,
+      "jev_accuracy": 0.9875,
+      "jev_n": 80,
+      "jev_source": "transfer",
+      "jev_task": "sciq"
+    },
+    {
+      "task": "hellaswag",
+      "label": "HellaSwag",
+      "ours_accuracy": 0.9033333333333333,
+      "ours_by_seed": {
+        "seed42-kl0.1": 0.91,
+        "seed43-kl0.1": 0.9,
+        "seed44-kl0.1": 0.9
+      },
+      "ours_n": 100,
+      "jev_accuracy": 0.8933333333333333,
+      "jev_n": 150,
+      "jev_source": "breadth",
+      "jev_task": "hellaswag"
+    },
+    {
+      "task": "clinc150",
+      "label": "CLINC",
+      "ours_accuracy": 0.9433333333333334,
+      "ours_by_seed": {
+        "seed42-kl0.1": 0.96,
+        "seed43-kl0.1": 0.93,
+        "seed44-kl0.1": 0.94
+      },
+      "ours_n": 100,
+      "jev_accuracy": 0.9733333333333334,
+      "jev_n": 150,
+      "jev_source": "breadth",
+      "jev_task": "clinc150"
+    },
+    {
+      "task": "dbpedia14",
+      "label": "DBpedia",
+      "ours_accuracy": 1.0,
+      "ours_by_seed": {
+        "seed42-kl0.1": 1.0,
+        "seed43-kl0.1": 1.0,
+        "seed44-kl0.1": 1.0
+      },
+      "ours_n": 100,
+      "jev_accuracy": 0.95,
+      "jev_n": 80,
+      "jev_source": "classification",
+      "jev_task": "dbpedia14"
+    },
+    {
+      "task": "sst5",
+      "label": "SST-5",
+      "ours_accuracy": 0.56,
+      "ours_by_seed": {
+        "seed42-kl0.1": 0.54,
+        "seed43-kl0.1": 0.56,
+        "seed44-kl0.1": 0.58
+      },
+      "ours_n": 100,
+      "jev_accuracy": 0.6375,
+      "jev_n": 80,
+      "jev_source": "classification",
+      "jev_task": "sst5"
+    },
+    {
+      "task": "yelp5",
+      "label": "Yelp",
+      "ours_accuracy": 0.62,
+      "ours_by_seed": {
+        "seed42-kl0.1": 0.61,
+        "seed43-kl0.1": 0.6,
+        "seed44-kl0.1": 0.65
+      },
+      "ours_n": 100,
+      "jev_accuracy": 0.6625,
+      "jev_n": 80,
+      "jev_source": "classification",
+      "jev_task": "yelp"
+    },
+    {
+      "task": "when2call",
+      "label": "When2Call",
+      "ours_accuracy": 0.6633333333333333,
+      "ours_by_seed": {
+        "seed42-kl0.1": 0.66,
+        "seed43-kl0.1": 0.67,
+        "seed44-kl0.1": 0.66
+      },
+      "ours_n": 100,
+      "jev_accuracy": 0.76,
+      "jev_n": 150,
+      "jev_source": "actions",
+      "jev_task": "when2call_action"
+    }
+  ]
+}
