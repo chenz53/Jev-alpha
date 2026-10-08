@@ -81,26 +81,7 @@ The question samples, prompts, option construction, and partitions differ. Jev's
 **These results provide context; they do not establish a head-to-head ranking or parity with Jev.**
 The radar uses a 0–100% scale. Its area is not an aggregate metric.
 
-| Accuracy | Jev-alpha | Published Jev |
-|---|---:|---:|
-| BoolQ | 92.00% | 92.50% |
-| QNLI | 94.33% | 92.50% |
-| PAWS | 94.00% | 78.75% |
-| MMLU | 83.00% | 90.00% |
-| SciQ | 100.00% | 98.75% |
-| HellaSwag | 90.33% | 89.33% |
-| CLINC | 94.33% | 97.33% |
-| DBpedia | 100.00% | 95.00% |
-| SST-5 | 56.00% | 63.75% |
-| Yelp | 62.00% | 66.25% |
-| When2Call | 66.33% | 76.00% |
-
-Our test uses 100 questions per dataset. Jev sources use Kev commit `fe64b1274ea7f80d4095866df90666abb03e9cf6`:
-
-- [Transfer-v4](https://github.com/jaredpalmer/kev/blob/fe64b1274ea7f80d4095866df90666abb03e9cf6/runs/jev-transfer-v4/report.json): MMLU, SciQ, QNLI, PAWS; 80 questions each.
-- [Decision-v4](https://github.com/jaredpalmer/kev/blob/fe64b1274ea7f80d4095866df90666abb03e9cf6/runs/jev-decision-v4/report.json): BoolQ, DBpedia, SST-5, Yelp; 80 questions each.
-- [Breadth-v1](https://github.com/jaredpalmer/kev/blob/fe64b1274ea7f80d4095866df90666abb03e9cf6/runs/breadth-v1-jev/report.json): CLINC and HellaSwag; 150 questions each.
-- [Devtools-v1](https://github.com/jaredpalmer/kev/blob/fe64b1274ea7f80d4095866df90666abb03e9cf6/runs/jev-devtools-v1/report.json): When2Call; 150 questions.
+See the [per-dataset accuracy table and pinned Jev sources](docs/comparison.md) for all 11 tasks and sample counts.
 
 [Plot values and provenance](docs/assets/jev-comparison.json) include source hashes, the model revision, and individual seed values.
 
@@ -118,18 +99,37 @@ flowchart LR
     L --> KL[Training: optional reference KL]
 ```
 
-The renderer gives each option a letter. The tokenizer must encode A–Z as distinct single tokens.
-The model receives token IDs and an attention mask. Training adds a label for one answer token and the valid option count.
-**Option cross-entropy (CE)** trains the distribution over valid option tokens at the position before that answer.
-Options shuffle each epoch. Training and serving use the same renderer, with thinking disabled.
-The optional **KL penalty** compares the adapter with the frozen base at that same position.
-The reference selects its top 64 vocabulary tokens after excluding the question's valid option tokens.
-Both models apply a separate log-softmax over that same set: `loss = option CE + weight × KL(reference || adapter)`.
-The reference disables the adapter, so training does not load a second copy of the base weights.
-This conditional penalty constrains the selected distribution, not the full vocabulary or every token position.
+The renderer assigns one letter token per option. Training and serving use the same native chat template, with thinking disabled. For question $i$, let $x_i$ be the rendered state and question, $O_i$ its valid option tokens, and $y_i\in O_i$ its target. Let $z_{\theta,i}(v)$ and $z_{0,i}(v)$ be the adapter and frozen-base logits for vocabulary token $v$, immediately before the answer.
 
-Calibration fits one temperature on separate labels and saves it with the adapter.
-Evaluation checks accuracy, Brier score, ten-bin expected calibration error before and after fitting, and option-order changes.
+**1. Learn the decision with option cross-entropy.** Normalize only over the valid options:
+
+$$
+p_{\theta,i}(v)=\frac{\exp z_{\theta,i}(v)}{\sum_{u\in O_i}\exp z_{\theta,i}(u)},\qquad \ell_{\mathrm{CE},i}=-\log p_{\theta,i}(y_i).
+$$
+
+This trains the required decision directly. Prompt tokens and end-of-sequence tokens receive no supervision. Options shuffle each epoch to reduce dependence on letter position. All three question types use this same categorical objective.
+
+**2. Limit drift with conditional reference KL.** Let $V$ be the vocabulary. Select the base model's top $K$ non-option tokens:
+
+$$
+S_i=\operatorname{TopK}_{v\in V\setminus O_i}z_{0,i}(v),\qquad
+\log q_{a,i}(v)=z_{a,i}(v)-\log\sum_{u\in S_i}\exp z_{a,i}(u),\quad a\in\{0,\theta\},\ v\in S_i.
+$$
+
+Both models use the same reference-selected set and separate log-softmax normalizations. The reference has no gradient and uses the disabled adapter.
+Excluding valid option tokens lets CE train the decision while KL discourages changes to the base model's relative non-option preferences.
+
+$$
+\ell_{\mathrm{KL},i}=\sum_{v\in S_i}q_{0,i}(v)\log\frac{q_{0,i}(v)}{q_{\theta,i}(v)},\qquad
+\mathcal{L}=\frac{1}{N}\sum_{i=1}^{N}\left(\ell_{\mathrm{CE},i}+\lambda\ell_{\mathrm{KL},i}\right).
+$$
+
+$N$ counts questions in the effective batch, including gradient accumulation. Each question supplies exactly one supervised answer token.
+The released model uses **$K=64$ and $\lambda=0.1$**; $\lambda=0$ gives the CE baseline. Both training normalizations use temperature one.
+The reference shares the frozen base weights, so it requires an extra forward pass but no second weight copy. This conditional KL constrains neither probability mass outside $S_i$ nor its total mass in the full vocabulary. It does not cover other token positions. It therefore reduces a measured form of drift; it does not guarantee preservation of all base-model abilities.
+
+Calibration separately fits one temperature on held-out labels after training. Brier score is an evaluation metric, not a training objective here.
+See [the CE implementation](jev_alpha/loss.py) and [the reference KL implementation](jev_alpha/regularization.py) for the exact masking and reductions.
 
 ## Scope and next steps
 
