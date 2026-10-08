@@ -1,17 +1,17 @@
 # Jev-alpha
 
+[Decisions](#decisions-that-software-can-use) · [Results](#what-the-first-experiment-shows) · [Jev comparison](#how-this-compares-with-jev) · [Architecture](#how-it-works) · [Roadmap](#scope-and-next-steps) · [Quickstart](#get-started) · [Development](#code-and-checks) · [Model weights](https://huggingface.co/chenz53/Jev-alpha-26B-A4B)
+
 **Build a useful decision model with thousands of examples and a single-GPU training budget.**
 
 Jev-alpha explores the idea behind Jev: give a model a state and questions, then get probabilities that software can act on.
 The goal is to reproduce that combination of **decision capability, fast inference, and low cost** with modest data and compute.
 
-The **alpha** is deliberate. We start with a small, working training layer, measure what improves, and build toward efficient decision inference.
-The first experiment establishes a capability baseline. Matching Jev's inference speed and cost remains a research goal.
+The **alpha** is deliberate. We start with a small, working training layer, measure what improves, and build toward efficient decision inference. The first experiment establishes a capability baseline. Matching Jev's inference speed and cost remains a research goal.
 
 **8,400 training questions · ~10 million trainable parameters · one H200 · eight runs in 20 hours 39 minutes**
 
 This is an independent project inspired by Jev. It builds on [ms-swift](https://github.com/modelscope/ms-swift) without changing framework code.
-**[Download the model](https://huggingface.co/chenz53/Jev-alpha-26B-A4B) · [Run an example](#get-started)**
 
 ## Decisions that software can use
 
