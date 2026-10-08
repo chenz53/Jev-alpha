@@ -1,4 +1,4 @@
-# Jev-alpha
+<h1 align="center"><img src="docs/assets/logo.png" alt="Jev-alpha" width="680"></h1>
 
 [Decisions](#decisions-that-software-can-use) · [Results](#what-the-first-experiment-shows) · [Jev comparison](#how-this-compares-with-jev) · [Architecture](#how-it-works) · [Roadmap](#scope-and-next-steps) · [Quickstart](#get-started) · [Development](#code-and-checks) · [Model weights](https://huggingface.co/chenz53/Jev-alpha-26B-A4B)
 
